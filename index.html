@@ -935,13 +935,16 @@
     }
 
     // ── Init ───────────────────────────────────────────────────────────────────
-    hydrate();
-    applyTheme(getTheme());
-    applyWallpaper();
-    setGreeting();
-    renderGrid();
-    loadWeather();
-    buildIconGrid('');
+    (async () => {
+      await hydrate();
+
+      applyTheme(getTheme());
+      applyWallpaper();
+      setGreeting();
+      renderGrid();
+      loadWeather();
+      buildIconGrid('');
+    })();
   })();
   </script>
 </body>

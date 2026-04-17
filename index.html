@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Start Page</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #ff7eed; --secondary: #00eefc; --tertiary: #ff9f4d;
+      --bg: #0c0c1f; --surface: #17172e; --sb: #292947;
+      --text: #e5e3fe; --td: #aaa8c2; --ol: #46465c;
+    }
+    html,body { height: 100%; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Manrope', sans-serif;
+      min-height: 100vh; overflow-x: hidden;
+      transition: background 0.5s;
+    }
+    input,button,select,textarea { font-family: inherit; }
+    button { cursor: pointer; }
+    a { text-decoration: none; color: inherit; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--ol); border-radius: 2px; }
+    input::placeholder { color: var(--td); opacity: 0.6; }
+
+    .ms {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal; font-style: normal;
+      display: inline-block; line-height: 1;
+      text-transform: none; white-space: nowrap;
+      font-variation-settings: 'FILL' 1, 'wght' 400;
+    }
+
+    /* ── Ambient Background ── */
+    #ambient-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+    #glow-orb {
+      position: absolute; top: 3%; left: 50%; transform: translateX(-50%);
+      width: min(750px, 110vw); height: min(750px, 110vw); border-radius: 50%;
+      background: radial-gradient(circle, color-mix(in srgb,var(--primary) 18%,transparent) 0%, transparent 70%);
+    }
+    #grid-floor {
+      position: absolute; bottom: 0; width: 100%; height: 50%;
+      background-image:
+        linear-gradient(color-mix(in srgb,var(--primary) 12%,transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in srgb,var(--primary) 12%,transparent) 1px, transparent 1px);
+      background-size: 40px 40px;
+      transform: perspective(500px) rotateX(60deg);
+      transform-origin: bottom;
+    }
+    #fade-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, transparent 20%, color-mix(in srgb,var(--bg) 55%,transparent) 60%, var(--bg) 92%);
+    }
+    #bg-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: none; }
+    #aurora-layer { position: fixed; inset: 0; z-index: 0; pointer-events: none; display: none; }
+
+    /* ── Settings Btn ── */
+    #settings-btn {
+      position: fixed; top: 1.5rem; right: 1.5rem; z-index: 40;
+      background: none; border: none;
+      color: color-mix(in srgb,var(--primary) 55%,transparent);
+      font-size: 1.8rem; padding: 0.3rem; line-height: 1;
+      transition: color 0.2s, transform 0.3s;
+    }
+    #settings-btn:hover { color: var(--primary); transform: rotate(60deg); }
+
+    /* ── Main App ── */
+    #app {
+      position: relative; z-index: 10;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 0 1rem 7rem; gap: 2rem;
+    }
+
+    /* ── Hero ── */
+    #hero {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 1rem; padding-top: clamp(3rem, 6vw, 5rem); text-align: center;
+      animation: fadeUp 0.6s ease-out;
+    }
+    #greeting {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(0.75rem, 2.5vw, 0.95rem);
+      letter-spacing: 0.3em; text-transform: uppercase; color: var(--td);
+    }
+    #clock-time {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(3.5rem, 14vw, 7rem);
+      font-weight: 700; letter-spacing: -0.05em; line-height: 1;
+      background: linear-gradient(to bottom, var(--primary), var(--text));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    #clock-time .sep { animation: blink 1s step-end infinite; display: inline-block; }
+    #clock-time .sec { font-size: 0.42em; opacity: 0.45; }
+    #clock-date { color: var(--td); font-size: 0.82rem; letter-spacing: 0.04em; }
+
+    #weather-widget {
+      display: flex; align-items: center; gap: 0.75rem;
+      background: color-mix(in srgb,var(--surface) 80%,transparent);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--ol); border-radius: 1rem;
+      padding: 0.6rem 1.2rem; min-width: 190px; justify-content: center;
+      font-size: 0.8rem; color: var(--td);
+    }
+    .wicon { font-size: 1.9rem; line-height: 1; }
+    .winfo { display: flex; flex-direction: column; gap: 0.1rem; }
+    .wtemp { font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; font-weight: 700; color: var(--secondary); line-height: 1; }
+    .wlabel { font-size: 0.7rem; color: var(--td); }
+    .wwind { font-size: 0.66rem; opacity: 0.65; }
+
+    /* ── App Grid ── */
+    #app-grid-section { width: 100%; max-width: 900px; animation: fadeUp 0.7s ease-out 0.15s both; }
+    #app-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 1rem 0.5rem; justify-items: center;
+    }
+    .app-item {
+      display: flex; flex-direction: column; align-items: center; gap: 0.55rem;
+      padding: 0.4rem; border: none; background: none; border-radius: 0.5rem;
+    }
+    .app-icon-wrap {
+      width: 4.2rem; height: 4.2rem; border-radius: 1.2rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.25s; position: relative;
+    }
+    .app-icon-wrap img { width: 1.9rem; height: 1.9rem; object-fit: contain; border-radius: 0.25rem; }
+    .app-icon-wrap .ms { font-size: 1.75rem; }
+    .app-icon-wrap .emoji-icon { font-size: 1.75rem; line-height: 1; }
+    .app-item:hover .app-icon-wrap { transform: translateY(-3px); }
+    .app-name {
+      font-family: 'Space Grotesk', sans-serif; font-size: 0.65rem;
+      letter-spacing: 0.07em; text-transform: uppercase; color: var(--td);
+      text-align: center; max-width: 5rem; line-height: 1.2; word-break: break-word;
+      transition: color 0.2s;
+    }
+    .app-item:hover .app-name { color: var(--secondary); }
+    .app-edit-overlay {
+      position: absolute; inset: 0; border-radius: 1.2rem;
+      background: rgba(0,0,0,0.68);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .app-edit-overlay .ms { font-size: 1.4rem; color: white; }
+
+    .add-app-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 0.55rem;
+      padding: 0.4rem; border: none; background: none;
+    }
+    .add-app-inner {
+      width: 4.2rem; height: 4.2rem; border-radius: 1.2rem;
+      border: 2px dashed var(--ol);
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.25s;
+    }
+    .add-app-inner .ms { font-size: 1.5rem; color: var(--td); font-variation-settings: 'FILL' 0; }
+    .add-app-btn:hover .add-app-inner { border-color: var(--primary); background: color-mix(in srgb,var(--primary) 10%,transparent); }
+    .add-app-btn:hover .app-name { color: var(--primary); }
+
+    /* ── Edit Mode Toggle ── */
+    #edit-controls { display: flex; justify-content: center; margin-top: 1.5rem; }
+    #edit-mode-btn {
+      display: flex; align-items: center; gap: 0.35rem;
+      background: transparent; border: 1px solid var(--ol); color: var(--td);
+      padding: 0.38rem 1.1rem; border-radius: 9999px;
+      font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase;
+      font-family: 'Space Grotesk', sans-serif; transition: all 0.2s;
+    }
+    #edit-mode-btn .ms { font-size: 0.95rem; font-variation-settings: 'FILL' 0; }
+    #edit-mode-btn.active { background: color-mix(in srgb,var(--primary) 14%,transparent); border-color: var(--primary); color: var(--primary); }
+    #edit-mode-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* ── Bottom Nav ── */
+    #bottom-nav {
+      position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+      z-index: 30; display: flex; gap: 0.3rem;
+      background: color-mix(in srgb,var(--bg) 78%,transparent);
+      backdrop-filter: blur(30px);
+      padding: 0.5rem 0.9rem; border-radius: 9999px;
+      border: 1px solid color-mix(in srgb,var(--ol) 35%,transparent);
+      box-shadow: 0 0 40px color-mix(in srgb,var(--primary) 8%,transparent);
+    }
+    .nav-item {
+      width: 2.3rem; height: 2.3rem; border-radius: 9999px;
+      display: flex; align-items: center; justify-content: center;
+      color: color-mix(in srgb,var(--secondary) 45%,transparent);
+      font-size: 1.3rem; transition: all 0.2s;
+    }
+    .nav-item:hover { background: color-mix(in srgb,var(--secondary) 12%,transparent); color: var(--secondary); }
+    .nav-item.active {
+      background: color-mix(in srgb,var(--primary) 20%,transparent);
+      border: 1px solid color-mix(in srgb,var(--primary) 50%,transparent);
+      color: var(--primary); transform: scale(1.1);
+      box-shadow: 0 0 12px color-mix(in srgb,var(--secondary) 25%,transparent);
+    }
+
+    /* ── Modals ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.78); backdrop-filter: blur(10px);
+      padding: 1rem;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal-panel {
+      background: var(--surface); border: 1px solid var(--ol);
+      border-radius: 1.5rem; width: 100%; max-width: 460px;
+      max-height: 88vh; overflow: hidden;
+      display: flex; flex-direction: column;
+      animation: scaleIn 0.2s ease-out;
+      box-shadow: 0 0 60px color-mix(in srgb,var(--primary) 12%,transparent);
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.15rem 1.5rem; border-bottom: 1px solid var(--ol); flex-shrink: 0;
+    }
+    .modal-header h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; font-weight: 700; }
+    .modal-close { background: none; border: none; color: var(--td); font-size: 1.5rem; padding: 0; transition: color 0.2s; }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { flex: 1; overflow-y: auto; padding: 1.4rem; }
+    .modal-footer {
+      padding: 0.9rem 1.4rem; border-top: 1px solid var(--ol);
+      display: flex; gap: 0.6rem; flex-shrink: 0;
+    }
+
+    /* ── Settings Tabs ── */
+    .modal-tabs { display: flex; border-bottom: 1px solid var(--ol); padding: 0 0.75rem; flex-shrink: 0; }
+    .modal-tab {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      gap: 0.18rem; padding: 0.65rem 0.3rem; background: none; border: none;
+      color: var(--td); border-bottom: 2px solid transparent;
+      font-size: 0.65rem; font-family: 'Space Grotesk', sans-serif;
+      letter-spacing: 0.05em; text-transform: uppercase; transition: all 0.2s;
+    }
+    .modal-tab .ms { font-size: 1.15rem; }
+    .modal-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ── Form ── */
+    .field { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1.15rem; }
+    .field-label { color: var(--td); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; font-family: 'Space Grotesk', sans-serif; }
+    .field-input {
+      background: color-mix(in srgb,var(--sb) 55%,transparent);
+      border: 1px solid var(--ol); border-radius: 0.5rem;
+      padding: 0.58rem 0.75rem; color: var(--text); font-size: 0.88rem;
+      width: 100%; outline: none; transition: border-color 0.2s;
+    }
+    .field-input:focus { border-color: var(--primary); }
+    .field-hint { color: var(--td); font-size: 0.7rem; opacity: 0.8; }
+
+    /* ── Theme Grid ── */
+    .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 0.65rem; }
+    .theme-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 0.38rem;
+      padding: 0.7rem 0.4rem; border-radius: 0.75rem;
+      background: transparent; border: 1px solid var(--ol); transition: all 0.2s;
+    }
+    .theme-btn.active { border-color: var(--primary); background: color-mix(in srgb,var(--primary) 10%,transparent); }
+    .theme-swatch { width: 2.4rem; height: 2.4rem; border-radius: 50%; }
+    .theme-name { color: var(--text); font-size: 0.62rem; font-family: 'Space Grotesk', sans-serif; text-align: center; }
+
+    /* ── Wallpaper Grid ── */
+    .wallpaper-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 0.65rem; }
+    .wallpaper-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 0.38rem;
+      padding: 0.85rem 0.4rem; border-radius: 0.75rem;
+      background: color-mix(in srgb,var(--sb) 55%,transparent);
+      border: 1px solid var(--ol); transition: all 0.2s;
+    }
+    .wallpaper-btn.active { border-color: var(--primary); background: color-mix(in srgb,var(--primary) 10%,transparent); }
+    .wallpaper-btn .ms { font-size: 1.4rem; color: var(--td); }
+    .wallpaper-btn.active .ms { color: var(--primary); }
+    .wallpaper-btn .wlbl { color: var(--text); font-size: 0.62rem; font-family: 'Space Grotesk', sans-serif; }
+
+    /* ── Icon Type Tabs ── */
+    .icon-type-row { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+    .icon-type-btn {
+      flex: 1; min-width: 60px; padding: 0.42rem 0.25rem;
+      background: color-mix(in srgb,var(--sb) 55%,transparent);
+      border: 1px solid var(--ol); border-radius: 0.5rem;
+      color: var(--td); font-size: 0.68rem; font-family: 'Space Grotesk', sans-serif;
+      transition: all 0.2s;
+    }
+    .icon-type-btn.active { background: color-mix(in srgb,var(--primary) 14%,transparent); border-color: var(--primary); color: var(--primary); }
+
+    /* ── Icon Grid ── */
+    .icon-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(2.4rem, 1fr));
+      gap: 0.3rem; max-height: 8.5rem; overflow-y: auto; margin-top: 0.4rem;
+    }
+    .icon-opt {
+      display: flex; align-items: center; justify-content: center; padding: 0.38rem;
+      background: color-mix(in srgb,var(--sb) 50%,transparent);
+      border: 1px solid var(--ol); border-radius: 0.4rem; cursor: pointer; transition: all 0.15s;
+    }
+    .icon-opt:hover, .icon-opt.active { border-color: var(--primary); background: color-mix(in srgb,var(--primary) 14%,transparent); }
+    .icon-opt .ms { font-size: 1.15rem; color: var(--td); }
+    .icon-opt.active .ms { color: var(--primary); }
+
+    /* ── Color Picker ── */
+    .color-row { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
+    .color-circle {
+      width: 1.45rem; height: 1.45rem; border-radius: 50%; cursor: pointer;
+      border: 2px solid transparent; transition: transform 0.15s; padding: 0; background: none;
+    }
+    .color-circle:hover, .color-circle.active { transform: scale(1.2); border-color: white; }
+
+    /* ── Buttons ── */
+    .btn { padding: 0.62rem 0.9rem; border-radius: 0.75rem; font-size: 0.83rem; font-family: 'Space Grotesk', sans-serif; transition: all 0.2s; cursor: pointer; border: none; }
+    .btn-ghost { background: color-mix(in srgb,var(--sb) 70%,transparent); border: 1px solid var(--ol); color: var(--td); }
+    .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-primary {
+      background: linear-gradient(135deg, color-mix(in srgb,var(--primary) 28%,transparent), color-mix(in srgb,var(--secondary) 18%,transparent));
+      border: 1px solid color-mix(in srgb,var(--primary) 55%,transparent);
+      color: var(--primary); font-weight: 700;
+      box-shadow: 0 0 15px color-mix(in srgb,var(--primary) 12%,transparent);
+    }
+    .btn-primary:hover { box-shadow: 0 0 25px color-mix(in srgb,var(--primary) 22%,transparent); }
+    .btn-danger { background: transparent; border: 1px solid var(--ol); color: #ff6e84; padding: 0.62rem; display: flex; align-items: center; }
+    .btn-danger:hover { border-color: #ff6e84; background: rgba(255,110,132,0.1); }
+
+    /* ── App Edit Preview ── */
+    #app-edit-preview { display: flex; justify-content: center; margin-bottom: 1.2rem; }
+    .preview-icon {
+      width: 4.5rem; height: 4.5rem; border-radius: 1.25rem;
+      display: flex; align-items: center; justify-content: center; border: 1px solid; transition: all 0.2s;
+    }
+    .preview-icon .ms { font-size: 2rem; }
+    .preview-icon img { width: 2.2rem; height: 2.2rem; object-fit: contain; border-radius: 0.25rem; }
+    .preview-icon .emoji-icon { font-size: 2rem; line-height: 1; }
+
+    /* ── Animations ── */
+    @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes scaleIn { from{opacity:0;transform:scale(0.93)} to{opacity:1;transform:scale(1)} }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.15} }
+    @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:0.8} }
+
+    /* ── Responsive ── */
+    @media (max-width: 500px) {
+      #app-grid { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 0.65rem; }
+      .modal-panel { max-width: 100%; border-radius: 1.25rem 1.25rem 0 0; align-self: flex-end; max-height: 90vh; }
+      .modal-overlay { align-items: flex-end; padding: 0; }
+      #bottom-nav { bottom: 0.75rem; }
+    }
+    @media (min-width: 900px) {
+      #app-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 1.5rem 1rem; }
+      .app-icon-wrap { width: 4.8rem; height: 4.8rem; }
+      .app-icon-wrap .ms { font-size: 2rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="aurora-layer"></div>
+  <div id="ambient-bg">
+    <div id="glow-orb"></div>
+    <canvas id="bg-canvas"></canvas>
+    <div id="grid-floor"></div>
+    <div id="fade-overlay"></div>
+  </div>
+
+  <button id="settings-btn" title="Settings"><span class="ms">settings</span></button>
+
+  <div id="app">
+    <header id="hero">
+      <div id="greeting"></div>
+      <div id="clock-widget">
+        <div id="clock-time"><span id="ct-h">00</span><span class="sep">:</span><span id="ct-m">00</span><span class="sec" id="ct-s">00</span></div>
+        <div id="clock-date"></div>
+      </div>
+      <div id="weather-widget"><span style="animation:pulse 1.5s ease-in-out infinite;font-size:0.8rem">Detecting location…</span></div>
+    </header>
+    <section id="app-grid-section">
+      <div id="app-grid"></div>
+      <div id="edit-controls">
+        <button id="edit-mode-btn"><span class="ms" style="font-variation-settings:'FILL' 0">edit</span> Edit shortcuts</button>
+      </div>
+    </section>
+  </div>
+
+  <nav id="bottom-nav">
+    <a href="#" class="nav-item active"><span class="ms">home</span></a>
+    <a href="#" class="nav-item"><span class="ms">search</span></a>
+    <a href="#" class="nav-item"><span class="ms">apps</span></a>
+    <a href="#" class="nav-item"><span class="ms">notifications</span></a>
+    <a href="#" class="nav-item"><span class="ms">person</span></a>
+  </nav>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal-overlay hidden">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button class="modal-close ms" id="settings-close">close</button>
+      </div>
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-tab="tab-appearance" id="tab-btn-appearance">
+          <span class="ms">palette</span>Appearance
+        </button>
+        <button class="modal-tab" data-tab="tab-wallpaper" id="tab-btn-wallpaper">
+          <span class="ms">wallpaper</span>Wallpaper
+        </button>
+        <button class="modal-tab" data-tab="tab-personal" id="tab-btn-personal">
+          <span class="ms">person</span>Personal
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="tab-appearance" class="tab-content active">
+          <div class="field-label" style="margin-bottom:.7rem">Color Theme</div>
+          <div class="theme-grid" id="theme-grid"></div>
+        </div>
+        <div id="tab-wallpaper" class="tab-content">
+          <div class="wallpaper-grid" id="wallpaper-grid"></div>
+          <div id="custom-url-field" class="field" style="margin-top:1rem;display:none">
+            <label class="field-label">Image URL</label>
+            <input type="url" id="wallpaper-url-input" class="field-input" placeholder="https://example.com/bg.jpg">
+            <span class="field-hint">Direct link to an image file</span>
+          </div>
+        </div>
+        <div id="tab-personal" class="tab-content">
+          <div class="field">
+            <label class="field-label">Your Name</label>
+            <input type="text" id="greeting-name-input" class="field-input" placeholder="satoshi">
+            <span class="field-hint">Shown in the greeting: "Good morning, …"</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="settings-save" style="flex:1">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Edit Modal -->
+  <div id="app-modal" class="modal-overlay hidden">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h2 id="app-modal-title">Add Shortcut</h2>
+        <button class="modal-close ms" id="app-modal-close">close</button>
+      </div>
+      <div class="modal-body">
+        <div id="app-edit-preview"><div class="preview-icon" id="preview-icon"></div></div>
+
+        <div class="field">
+          <label class="field-label">Name</label>
+          <input type="text" id="app-name-input" class="field-input" placeholder="My App">
+        </div>
+        <div class="field">
+          <label class="field-label">URL</label>
+          <input type="url" id="app-url-input" class="field-input" placeholder="https://example.com">
+        </div>
+        <div class="field">
+          <label class="field-label">Accent Color</label>
+          <div class="color-row" id="accent-color-row">
+            <input type="color" id="accent-color-picker" style="width:2.3rem;height:2.3rem;border-radius:.4rem;border:1px solid var(--ol);background:none;cursor:pointer;padding:2px">
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Icon Type</label>
+          <div class="icon-type-row" id="icon-type-row">
+            <button class="icon-type-btn active" data-type="material">Icons</button>
+            <button class="icon-type-btn" data-type="favicon">Auto Favicon</button>
+            <button class="icon-type-btn" data-type="emoji">Emoji</button>
+            <button class="icon-type-btn" data-type="image">Image URL</button>
+          </div>
+        </div>
+
+        <div id="panel-material">
+          <input type="text" id="icon-search" class="field-input" placeholder="Search icons…" style="margin-bottom:.4rem">
+          <div class="icon-grid" id="icon-grid"></div>
+          <input type="text" id="icon-custom-input" class="field-input" placeholder="or type icon name" style="margin-top:.45rem">
+        </div>
+        <div id="panel-emoji" style="display:none">
+          <input type="text" id="emoji-input" class="field-input" placeholder="🌟" style="font-size:1.5rem;text-align:center">
+        </div>
+        <div id="panel-image" style="display:none">
+          <input type="url" id="image-url-input" class="field-input" placeholder="https://example.com/logo.png">
+        </div>
+        <div id="panel-favicon" style="display:none">
+          <p style="font-size:.8rem;color:var(--td);padding:.4rem 0">Will auto-fetch the favicon from the URL above.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="delete-app-btn" class="btn btn-danger" style="display:none"><span class="ms">delete</span></button>
+        <button class="btn btn-ghost" id="app-modal-cancel" style="flex:1">Cancel</button>
+        <button class="btn btn-primary" id="app-save-btn" style="flex:2">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (() => {
+    // ── Constants ──────────────────────────────────────────────────────────────
+    const THEMES = [
+      {id:'neon',   name:'Neon Horizon', p:'#ff7eed',s:'#00eefc',t:'#ff9f4d',bg:'#0c0c1f',sf:'#17172e',sb:'#292947',tx:'#e5e3fe',td:'#aaa8c2',ol:'#46465c'},
+      {id:'cyber',  name:'Cyber Blue',   p:'#38bdf8',s:'#818cf8',t:'#34d399',bg:'#040d1a',sf:'#0a1628',sb:'#0f2040',tx:'#e0f2fe',td:'#7cb9d8',ol:'#1e3a5f'},
+      {id:'matrix', name:'Matrix',       p:'#4ade80',s:'#86efac',t:'#fde047',bg:'#020f04',sf:'#041508',sb:'#072010',tx:'#dcfce7',td:'#6fc87e',ol:'#14532d'},
+      {id:'solar',  name:'Solar Punk',   p:'#fb923c',s:'#fbbf24',t:'#f472b6',bg:'#120900',sf:'#1e0f00',sb:'#2d1800',tx:'#fff7ed',td:'#d4a06a',ol:'#5c2d00'},
+      {id:'violet', name:'Void Violet',  p:'#c084fc',s:'#e879f9',t:'#67e8f9',bg:'#0c0520',sf:'#110730',sb:'#1a0a45',tx:'#f5f3ff',td:'#a78bda',ol:'#3b1f6b'},
+    ];
+
+    const WMO = {
+      0:['☀️','Clear Sky'],1:['🌤️','Mainly Clear'],2:['⛅','Partly Cloudy'],3:['☁️','Overcast'],
+      45:['🌫️','Fog'],48:['🌫️','Icy Fog'],51:['🌦️','Light Drizzle'],53:['🌦️','Drizzle'],
+      55:['🌧️','Heavy Drizzle'],61:['🌧️','Light Rain'],63:['🌧️','Rain'],65:['🌧️','Heavy Rain'],
+      71:['🌨️','Light Snow'],73:['❄️','Snow'],75:['❄️','Heavy Snow'],
+      80:['🌦️','Showers'],81:['🌧️','Showers'],82:['⛈️','Heavy Showers'],
+      95:['⛈️','Thunderstorm'],96:['⛈️','Thunderstorm'],99:['🌩️','Heavy Storm'],
+    };
+
+    const ALL_ICONS = [
+      'language','home','dashboard','code','terminal','cloud','storage','security','shield',
+      'key','lock','vpn_key','mail','send','chat','forum','hub','payments','account_balance',
+      'currency_bitcoin','analytics','query_stats','monitoring','settings','build','science',
+      'school','work','person','group','favorite','star','bookmark','download','upload',
+      'sync','refresh','search','explore','map','music_note','movie','photo','mic',
+      'headphones','rss_feed','newspaper','shopping_cart','store','flight','directions_car',
+      'wifi','router','developer_mode','api','webhook','database','dns','computer',
+      'phone_android','cloud_upload','cloud_download','folder','description','edit_note',
+      'visibility','lock_open','notifications','calendar_month','event','timer',
+    ];
+
+    const DEFAULT_APPS = [
+      {id:'1',name:'Bitcoin Node',url:'#',icon:'currency_bitcoin',iconType:'material',accent:'#ff7eed'},
+      {id:'2',name:'BTCPay Server',url:'#',icon:'payments',iconType:'material',accent:'#ff9f4d'},
+      {id:'3',name:'Lightning',url:'#',icon:'hub',iconType:'material',accent:'#00eefc'},
+      {id:'4',name:'Security',url:'#',icon:'shield',iconType:'material',accent:'#b47bff'},
+      {id:'5',name:'Metrics',url:'#',icon:'query_stats',iconType:'material',accent:'#ff7eed'},
+    ];
+
+    const DEFAULT_SETTINGS = {themeId:'neon',wallpaper:'synthwave',wallpaperUrl:'',name:'satoshi'};
+
+    // ── State ──────────────────────────────────────────────────────────────────
+    let S = {
+      apps: JSON.parse(JSON.stringify(DEFAULT_APPS)),
+      settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),
+    };
+    let editMode = false;
+    let editingId = null;
+    let curIconType = 'material';
+    let curAccent = '#ff7eed';
+
+    // ── Persistence ────────────────────────────────────────────────────────────
+    async function persist() {
+    await fetch('save.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(S)
+    });
+    }
+
+    async function hydrate() {
+    const res = await fetch('load.php');
+    const d = await res.json();
+    if (d) S = d;
+    }
+
+    // ── Theme ──────────────────────────────────────────────────────────────────
+    function getTheme() { return THEMES.find(t => t.id === S.settings.themeId) || THEMES[0]; }
+    function applyTheme(th) {
+      const r = document.documentElement.style;
+      r.setProperty('--primary',th.p); r.setProperty('--secondary',th.s);
+      r.setProperty('--tertiary',th.t); r.setProperty('--bg',th.bg);
+      r.setProperty('--surface',th.sf); r.setProperty('--sb',th.sb);
+      r.setProperty('--text',th.tx); r.setProperty('--td',th.td);
+      r.setProperty('--ol',th.ol);
+    }
+
+    // ── Wallpaper ──────────────────────────────────────────────────────────────
+    let starsDrawn = false;
+    function applyWallpaper() {
+      const body = document.body;
+      const w = S.settings.wallpaper;
+      const canvas = document.getElementById('bg-canvas');
+      const grid = document.getElementById('grid-floor');
+      const orb = document.getElementById('glow-orb');
+      const aurora = document.getElementById('aurora-layer');
+      body.style.backgroundImage = '';
+      body.style.backgroundSize = '';
+      body.style.backgroundPosition = '';
+      body.style.backgroundAttachment = '';
+      canvas.style.display = 'none';
+      aurora.style.display = 'none';
+      grid.style.display = '';
+      orb.style.display = '';
+
+      if (w === 'custom' && S.settings.wallpaperUrl) {
+        body.style.backgroundImage = `url(${S.settings.wallpaperUrl})`;
+        body.style.backgroundSize = 'cover';
+        body.style.backgroundPosition = 'center';
+        body.style.backgroundAttachment = 'fixed';
+      } else if (w === 'dark') {
+        grid.style.display = 'none'; orb.style.display = 'none';
+      } else if (w === 'stars') {
+        grid.style.display = 'none';
+        canvas.style.display = 'block';
+        drawStars();
+      } else if (w === 'aurora') {
+        grid.style.display = 'none'; orb.style.display = 'none';
+        aurora.style.display = 'block';
+        const th = getTheme();
+        aurora.style.background = `radial-gradient(ellipse at 15% 45%, ${th.p}28 0%, transparent 50%), radial-gradient(ellipse at 85% 20%, ${th.s}28 0%, transparent 50%), radial-gradient(ellipse at 50% 85%, ${th.t}20 0%, transparent 50%), ${th.bg}`;
+      }
+    }
+
+    function drawStars() {
+      const canvas = document.getElementById('bg-canvas');
+      const ctx = canvas.getContext('2d');
+      const th = getTheme();
+      canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+      ctx.fillStyle = th.bg; ctx.fillRect(0,0,canvas.width,canvas.height);
+      for(let i=0;i<250;i++){
+        const x=Math.random()*canvas.width, y=Math.random()*canvas.height;
+        const r=Math.random()*1.4+0.2, a=Math.random()*0.7+0.25;
+        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+        ctx.fillStyle=`rgba(255,255,255,${a})`; ctx.fill();
+      }
+      for(let i=0;i<12;i++){
+        const x=Math.random()*canvas.width, y=Math.random()*canvas.height;
+        ctx.beginPath(); ctx.arc(x,y,2,0,Math.PI*2);
+        ctx.globalAlpha=0.55; ctx.fillStyle=i%2===0?th.p:th.s; ctx.fill(); ctx.globalAlpha=1;
+      }
+    }
+    window.addEventListener('resize',()=>{ if(S.settings.wallpaper==='stars') drawStars(); });
+
+    // ── Clock ──────────────────────────────────────────────────────────────────
+    function tickClock() {
+      const now = new Date();
+      document.getElementById('ct-h').textContent = String(now.getHours()).padStart(2,'0');
+      document.getElementById('ct-m').textContent = String(now.getMinutes()).padStart(2,'0');
+      document.getElementById('ct-s').textContent = String(now.getSeconds()).padStart(2,'0');
+      const ds = now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+      document.getElementById('clock-date').textContent = ds;
+    }
+    setInterval(tickClock, 1000); tickClock();
+
+    // ── Weather ────────────────────────────────────────────────────────────────
+    async function loadWeather() {
+      const el = document.getElementById('weather-widget');
+      if (!navigator.geolocation) { el.innerHTML='<span>📍 Geolocation unavailable</span>'; return; }
+      navigator.geolocation.getCurrentPosition(async ({coords:{latitude:lat,longitude:lon}}) => {
+        try {
+          const [wRes,gRes] = await Promise.all([
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m&wind_speed_unit=kmh`),
+            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
+          ]);
+          const wD = await wRes.json(), gD = await gRes.json();
+          const c = wD.current;
+          const [icon,label] = WMO[c.weather_code] || ['🌡️','Unknown'];
+          const city = gD.address?.city||gD.address?.town||gD.address?.village||gD.address?.county||'';
+          el.innerHTML = `
+            <span class="wicon">${icon}</span>
+            <div class="winfo">
+              <div class="wtemp">${Math.round(c.temperature_2m)}°C</div>
+              <div class="wlabel">${label}${city?' · '+city:''} · Feels ${Math.round(c.apparent_temperature)}°C</div>
+              <div class="wwind">💨 ${Math.round(c.wind_speed_10m)} km/h</div>
+            </div>`;
+        } catch(e){ el.innerHTML='<span>⚠️ Weather unavailable</span>'; }
+      }, ()=>{ el.innerHTML='<span>📍 Location access denied</span>'; });
+    }
+
+    // ── Greeting ───────────────────────────────────────────────────────────────
+    function setGreeting() {
+      const h = new Date().getHours();
+      const s = h<12?'morning':h<18?'afternoon':'evening';
+      document.getElementById('greeting').textContent = `Good ${s}, ${S.settings.name}`;
+    }
+
+    // ── App Grid ───────────────────────────────────────────────────────────────
+    function iconHTML(app, accent, size) {
+      const sz = size || '1.75rem';
+      if (app.iconType==='material') return `<span class="ms" style="font-size:${sz};color:${accent}">${app.icon||'link'}</span>`;
+      if (app.iconType==='emoji') return `<span class="emoji-icon" style="font-size:${sz}">${app.icon||'★'}</span>`;
+      if (app.iconType==='favicon') {
+        try {
+          const d = new URL(app.url).hostname;
+          return `<img src="https://www.google.com/s2/favicons?domain=${d}&sz=64" alt="" onerror="this.outerHTML='<span class=ms style=font-size:${sz};color:${accent}>language</span>'">`;
+        } catch { return `<span class="ms" style="font-size:${sz};color:${accent}">language</span>`; }
+      }
+      if (app.iconType==='image') return `<img src="${app.icon}" alt="" onerror="this.outerHTML='<span class=ms style=font-size:${sz};color:${accent}>broken_image</span>'">`;
+      return `<span class="ms" style="font-size:${sz};color:${accent}">link</span>`;
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById('app-grid');
+      grid.innerHTML = '';
+      S.apps.forEach(app => {
+        const a = app.accent || getTheme().p;
+        const btn = document.createElement('button');
+        btn.className = 'app-item';
+        btn.innerHTML = `
+          <div class="app-icon-wrap" style="background:${a}18;border:1px solid ${a}38">
+            ${iconHTML(app,a)}
+            ${editMode?`<div class="app-edit-overlay"><span class="ms">edit</span></div>`:''}
+          </div>
+          <span class="app-name">${app.name}</span>`;
+        btn.addEventListener('mouseenter', ()=>{
+          btn.querySelector('.app-icon-wrap').style.boxShadow=`0 0 22px ${a}45`;
+          btn.querySelector('.app-icon-wrap').style.borderColor=`${a}70`;
+        });
+        btn.addEventListener('mouseleave', ()=>{
+          btn.querySelector('.app-icon-wrap').style.boxShadow='';
+          btn.querySelector('.app-icon-wrap').style.borderColor=`${a}38`;
+        });
+        btn.addEventListener('click',()=>{
+          if(editMode){openAppModal(app.id);return;}
+          if(app.url && app.url!=='#') window.open(app.url,'_blank');
+        });
+        grid.appendChild(btn);
+      });
+
+      const addBtn = document.createElement('button');
+      addBtn.className = 'add-app-btn';
+      addBtn.innerHTML = `
+        <div class="add-app-inner"><span class="ms" style="font-variation-settings:'FILL' 0">add</span></div>
+        <span class="app-name">Add</span>`;
+      addBtn.addEventListener('click',()=>openAppModal(null));
+      grid.appendChild(addBtn);
+    }
+
+    // Edit mode toggle
+    const editBtn = document.getElementById('edit-mode-btn');
+    editBtn.addEventListener('click',()=>{
+      editMode = !editMode;
+      editBtn.classList.toggle('active',editMode);
+      editBtn.innerHTML = editMode
+        ? '<span class="ms">done</span> Done editing'
+        : '<span class="ms" style="font-variation-settings:\'FILL\' 0">edit</span> Edit shortcuts';
+      renderGrid();
+    });
+
+    // ── Settings Modal ─────────────────────────────────────────────────────────
+    document.getElementById('settings-btn').addEventListener('click', openSettings);
+    document.getElementById('settings-close').addEventListener('click', closeSettings);
+    document.getElementById('settings-save').addEventListener('click', saveSettings);
+    document.getElementById('settings-modal').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeSettings(); });
+
+    document.querySelectorAll('.modal-tab[data-tab]').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        document.querySelectorAll('.modal-tab').forEach(b=>b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    function openSettings() {
+      buildThemeGrid(); buildWallpaperGrid();
+      document.getElementById('greeting-name-input').value = S.settings.name;
+      document.getElementById('wallpaper-url-input').value = S.settings.wallpaperUrl||'';
+      document.getElementById('custom-url-field').style.display = S.settings.wallpaper==='custom'?'':'none';
+      document.getElementById('settings-modal').classList.remove('hidden');
+    }
+    function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
+    function saveSettings() {
+      S.settings.name = document.getElementById('greeting-name-input').value.trim() || 'satoshi';
+      S.settings.wallpaperUrl = document.getElementById('wallpaper-url-input').value.trim();
+      persist(); applyTheme(getTheme()); applyWallpaper(); setGreeting(); closeSettings();
+    }
+
+    function buildThemeGrid() {
+      const grid = document.getElementById('theme-grid'); grid.innerHTML='';
+      THEMES.forEach(th=>{
+        const btn = document.createElement('button');
+        btn.className='theme-btn'+(th.id===S.settings.themeId?' active':'');
+        btn.innerHTML=`<div class="theme-swatch" style="background:conic-gradient(${th.p} 0 33%,${th.s} 33% 66%,${th.bg} 66%)"></div><span class="theme-name">${th.name}</span>`;
+        btn.addEventListener('click',()=>{
+          S.settings.themeId=th.id;
+          document.querySelectorAll('.theme-btn').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+        grid.appendChild(btn);
+      });
+    }
+
+    const WALLPAPERS = [
+      {id:'synthwave',icon:'grid_on',label:'Synthwave'},
+      {id:'dark',icon:'dark_mode',label:'Pure Dark'},
+      {id:'stars',icon:'stars',label:'Starfield'},
+      {id:'aurora',icon:'blur_on',label:'Aurora'},
+      {id:'custom',icon:'image',label:'Custom URL'},
+    ];
+
+    function buildWallpaperGrid() {
+      const grid = document.getElementById('wallpaper-grid'); grid.innerHTML='';
+      WALLPAPERS.forEach(w=>{
+        const btn=document.createElement('button');
+        btn.className='wallpaper-btn'+(w.id===S.settings.wallpaper?' active':'');
+        btn.innerHTML=`<span class="ms">${w.icon}</span><span class="wlbl">${w.label}</span>`;
+        btn.addEventListener('click',()=>{
+          S.settings.wallpaper=w.id;
+          document.querySelectorAll('.wallpaper-btn').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById('custom-url-field').style.display=w.id==='custom'?'':'none';
+        });
+        grid.appendChild(btn);
+      });
+    }
+
+    // ── App Edit Modal ─────────────────────────────────────────────────────────
+    document.getElementById('app-modal-close').addEventListener('click', closeAppModal);
+    document.getElementById('app-modal-cancel').addEventListener('click', closeAppModal);
+    document.getElementById('app-modal').addEventListener('click', e=>{ if(e.target===e.currentTarget) closeAppModal(); });
+    document.getElementById('app-save-btn').addEventListener('click', saveApp);
+    document.getElementById('delete-app-btn').addEventListener('click', deleteApp);
+    document.getElementById('accent-color-picker').addEventListener('input', e=>{ curAccent=e.target.value; buildAccentRow(); updatePreview(); });
+    document.getElementById('icon-search').addEventListener('input', e=>buildIconGrid(e.target.value));
+    document.getElementById('icon-custom-input').addEventListener('input', ()=>{ buildIconGrid(document.getElementById('icon-search').value); updatePreview(); });
+    document.getElementById('emoji-input').addEventListener('input', updatePreview);
+    document.getElementById('image-url-input').addEventListener('input', updatePreview);
+    document.getElementById('app-url-input').addEventListener('input', updatePreview);
+
+    document.querySelectorAll('#icon-type-row .icon-type-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        curIconType = btn.dataset.type;
+        document.querySelectorAll('#icon-type-row .icon-type-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        showIconPanel(curIconType);
+        updatePreview();
+      });
+    });
+
+    function showIconPanel(type) {
+      ['material','emoji','image','favicon'].forEach(t=>{
+        document.getElementById('panel-'+t).style.display = t===type?'':'none';
+      });
+      if(type==='material') buildIconGrid(document.getElementById('icon-search').value);
+    }
+
+    function buildIconGrid(search) {
+      const grid = document.getElementById('icon-grid');
+      const cur = document.getElementById('icon-custom-input').value.trim();
+      const list = search ? ALL_ICONS.filter(i=>i.includes(search.toLowerCase())) : ALL_ICONS;
+      grid.innerHTML = list.slice(0,60).map(ic=>`
+        <button class="icon-opt${ic===cur?' active':''}" data-icon="${ic}" title="${ic}">
+          <span class="ms">${ic}</span>
+        </button>`).join('');
+      grid.querySelectorAll('.icon-opt').forEach(b=>{
+        b.addEventListener('click',()=>{
+          document.getElementById('icon-custom-input').value = b.dataset.icon;
+          buildIconGrid(document.getElementById('icon-search').value);
+          updatePreview();
+        });
+      });
+    }
+
+    function buildAccentRow() {
+      const th = getTheme();
+      const colors = [th.p, th.s, th.t||'#ff9f4d', '#ff6b6b', '#51cf66', '#339af0', '#cc5de8', '#f76707'];
+      const row = document.getElementById('accent-color-row');
+      row.querySelectorAll('.color-circle').forEach(c=>c.remove());
+      colors.forEach(c=>{
+        const btn = document.createElement('button');
+        btn.className='color-circle'+(c===curAccent?' active':'');
+        btn.style.background=c;
+        btn.addEventListener('click',()=>{
+          curAccent=c;
+          document.getElementById('accent-color-picker').value=c;
+          row.querySelectorAll('.color-circle').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          updatePreview();
+        });
+        row.appendChild(btn);
+      });
+    }
+
+    function getCurIcon() {
+      if(curIconType==='material') return document.getElementById('icon-custom-input').value.trim()||'link';
+      if(curIconType==='emoji') return document.getElementById('emoji-input').value||'★';
+      if(curIconType==='image') return document.getElementById('image-url-input').value.trim()||'';
+      return '';
+    }
+
+    function updatePreview() {
+      const preview = document.getElementById('preview-icon');
+      const fakeApp = { icon:getCurIcon(), iconType:curIconType, url:document.getElementById('app-url-input').value };
+      preview.style.background = curAccent+'22';
+      preview.style.borderColor = curAccent+'55';
+      preview.innerHTML = iconHTML(fakeApp, curAccent, '2rem');
+    }
+
+    function openAppModal(appId) {
+      editingId = appId;
+      const app = appId ? S.apps.find(a=>a.id===appId) : null;
+      document.getElementById('app-modal-title').textContent = app ? 'Edit Shortcut' : 'Add Shortcut';
+      document.getElementById('delete-app-btn').style.display = app ? '' : 'none';
+      document.getElementById('app-name-input').value = app?.name||'';
+      document.getElementById('app-url-input').value = app?.url||'';
+      curAccent = app?.accent || getTheme().p;
+      curIconType = app?.iconType || 'material';
+      document.getElementById('accent-color-picker').value = curAccent;
+      document.querySelectorAll('#icon-type-row .icon-type-btn').forEach(b=>{ b.classList.toggle('active', b.dataset.type===curIconType); });
+      showIconPanel(curIconType);
+      if(curIconType==='material') {
+        document.getElementById('icon-custom-input').value = app?.icon||'';
+        document.getElementById('icon-search').value='';
+        buildIconGrid('');
+      } else if(curIconType==='emoji') {
+        document.getElementById('emoji-input').value = app?.icon||'';
+      } else if(curIconType==='image') {
+        document.getElementById('image-url-input').value = app?.icon||'';
+      }
+      buildAccentRow(); updatePreview();
+      document.getElementById('app-modal').classList.remove('hidden');
+    }
+
+    function closeAppModal() { document.getElementById('app-modal').classList.add('hidden'); }
+
+    function saveApp() {
+      const name = document.getElementById('app-name-input').value.trim() || 'New App';
+      const url = document.getElementById('app-url-input').value.trim() || '#';
+      const icon = getCurIcon();
+      const iconType = curIconType;
+      const accent = curAccent;
+      if(editingId) {
+        S.apps = S.apps.map(a=>a.id===editingId?{...a,name,url,icon,iconType,accent}:a);
+      } else {
+        S.apps.push({id:Date.now().toString(36),name,url,icon,iconType,accent});
+      }
+      persist(); renderGrid(); closeAppModal();
+    }
+
+    function deleteApp() {
+      if(!editingId) return;
+      S.apps = S.apps.filter(a=>a.id!==editingId);
+      persist(); renderGrid(); closeAppModal();
+    }
+
+    // ── Init ───────────────────────────────────────────────────────────────────
+    hydrate();
+    applyTheme(getTheme());
+    applyWallpaper();
+    setGreeting();
+    renderGrid();
+    loadWeather();
+    buildIconGrid('');
+  })();
+  </script>
+</body>
+</html>
